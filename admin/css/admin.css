@@ -1,0 +1,17 @@
+/* Скрываем стандартные элементы редактора для профилей */
+.post-type-plintus_profile .wp-block {
+    display: none;
+}
+
+.post-type-plintus_profile #postdivrich {
+    display: none;
+}
+
+.post-type-plintus_profile #plintus-profile-editor-root {
+    margin: 0;
+    padding: 0;
+    height: calc(100vh - 120px);
+    width: 100%;
+    position: relative;
+}
+
