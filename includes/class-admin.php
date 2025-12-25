@@ -54,6 +54,13 @@ class Admin {
         );
 
         wp_enqueue_style(
+            'unicons',
+            'https://unicons.iconscout.com/release/v4.0.8/css/line.css',
+            [],
+            '4.0.8'
+        );
+
+        wp_enqueue_style(
             'plintus-profile-editor-admin',
             Plugin::get_url() . 'admin/css/admin.css',
             [],

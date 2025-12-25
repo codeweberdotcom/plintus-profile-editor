@@ -23,8 +23,7 @@ function ToolButton({ tool, isActive, onClick }) {
             onClick={handleClick}
             title={tool.label}
         >
-            <span className="tool-icon">{tool.icon}</span>
-            <span className="tool-label">{tool.label}</span>
+            <i className={`uil ${tool.icon}`}></i>
         </button>
     );
 }

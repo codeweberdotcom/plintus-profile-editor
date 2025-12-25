@@ -2,7 +2,7 @@ import React from 'react';
 import { Line, Text, Group } from 'react-konva';
 import { formatLengthMM } from '../../utils/geometry';
 
-function LineElement({ element, isSelected, onSelect, showDimensions = true }) {
+function LineElement({ element, isSelected, isHovered = false, onSelect, showDimensions = true }) {
     const { start, end, length } = element;
     
     // Конвертируем длину в миллиметры
@@ -36,16 +36,28 @@ function LineElement({ element, isSelected, onSelect, showDimensions = true }) {
     const textX = horizontalStartX + horizontalLength / 2;
     const textY = horizontalStartY - 12; // Поднят выше линии
 
-    const strokeColor = isSelected ? '#0073aa' : '#666';
-    const textColor = isSelected ? '#0073aa' : '#333';
+    // Определяем цвет линии в зависимости от состояния
+    let lineStroke = '#000';
+    let lineStrokeWidth = 2;
+    
+    if (isSelected) {
+        lineStroke = '#0073aa';
+        lineStrokeWidth = 3;
+    } else if (isHovered) {
+        lineStroke = '#0073aa'; // Подсветка при наведении
+        lineStrokeWidth = 2.5;
+    }
+    
+    const strokeColor = isSelected ? '#0073aa' : (isHovered ? '#0073aa' : '#666');
+    const textColor = isSelected ? '#0073aa' : (isHovered ? '#0073aa' : '#333');
 
     return (
         <Group onClick={onSelect} onTap={onSelect}>
             {/* Основная линия */}
             <Line
                 points={[start.x, start.y, end.x, end.y]}
-                stroke={isSelected ? '#0073aa' : '#000'}
-                strokeWidth={isSelected ? 3 : 2}
+                stroke={lineStroke}
+                strokeWidth={lineStrokeWidth}
             />
             
             {/* Размеры (сноска) - отображаются только если showDimensions === true */}

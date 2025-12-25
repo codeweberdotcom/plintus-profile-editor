@@ -1,15 +1,16 @@
 .plintus-tool-button {
-    display: flex;
-    flex-direction: column;
+    display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 8px 12px;
+    justify-content: center;
+    padding: 8px;
     border: 1px solid #ddd;
     background: #fff;
     cursor: pointer;
     border-radius: 4px;
     transition: all 0.2s;
-    min-width: 60px;
+    width: 36px;
+    height: 36px;
+    margin: 0;
 }
 
 .plintus-tool-button:hover {
@@ -22,12 +23,7 @@
     border-color: #0073aa;
 }
 
-.tool-icon {
-    font-size: 20px;
-}
-
-.tool-label {
-    font-size: 11px;
-    text-transform: uppercase;
+.plintus-tool-button i {
+    font-size: 18px;
 }
 

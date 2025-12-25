@@ -94,3 +94,33 @@ export function roundToMultiple(value, multiple) {
     return Math.round(value / multiple) * multiple;
 }
 
+/**
+ * Проверка попадания точки на линию
+ * @param {Object} point - Точка {x, y}
+ * @param {Object} lineStart - Начало линии {x, y}
+ * @param {Object} lineEnd - Конец линии {x, y}
+ * @param {number} tolerance - Радиус попадания в пикселях (по умолчанию 10)
+ * @returns {boolean} - true если точка попадает на линию
+ */
+export function isPointOnLine(point, lineStart, lineEnd, tolerance = 10) {
+    const dx = lineEnd.x - lineStart.x;
+    const dy = lineEnd.y - lineStart.y;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    
+    if (length === 0) return false;
+    
+    // Находим проекцию точки на линию
+    const t = Math.max(0, Math.min(1, 
+        ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) / (length * length)
+    ));
+    const projX = lineStart.x + t * dx;
+    const projY = lineStart.y + t * dy;
+    
+    // Вычисляем расстояние от точки до проекции
+    const dist = Math.sqrt(
+        Math.pow(point.x - projX, 2) + Math.pow(point.y - projY, 2)
+    );
+    
+    return dist < tolerance;
+}
+

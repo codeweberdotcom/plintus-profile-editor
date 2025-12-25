@@ -3,7 +3,7 @@ import { Stage, Layer, Line, Circle } from 'react-konva';
 import Grid from './Grid';
 import { useEditorStore } from '../../store/useEditorStore';
 import { snapToGrid } from './SnapToGrid';
-import { snapToOrthogonal, distance, mmToPixels } from '../../utils/geometry';
+import { snapToOrthogonal, distance, mmToPixels, isPointOnLine } from '../../utils/geometry';
 import LineElement from '../Elements/LineElement';
 import ArcElement from '../Elements/ArcElement';
 import TempLinePreview from './TempLinePreview';
@@ -132,6 +132,8 @@ function CanvasEditor() {
 
     // Состояние для позиции курсора
     const [cursorPosition, setCursorPosition] = useState(null);
+    // Состояние для наведенного элемента (для подсветки)
+    const [hoveredElementId, setHoveredElementId] = useState(null);
 
     // Обработка наведения мыши (для предпросмотра линии и курсора)
     const handleStageMouseMove = (e) => {
@@ -141,6 +143,19 @@ function CanvasEditor() {
         // Всегда обновляем позицию курсора с привязкой к сетке
         let snappedPoint = snapToGrid(point, gridStepPixels);
         setCursorPosition(snappedPoint);
+        
+        // Если режим выбора активен, проверяем наведение на элементы
+        if (selectedTool === 'select') {
+            const hoveredElement = elements.find(el => {
+                if (el.type === 'line') {
+                    return isPointOnLine(point, el.start, el.end, 10);
+                }
+                return false;
+            });
+            setHoveredElementId(hoveredElement ? hoveredElement.id : null);
+        } else {
+            setHoveredElementId(null);
+        }
         
         if (selectedTool === 'line' && currentLineStart) {
             const endPoint = snapToOrthogonal(currentLineStart, snappedPoint);
@@ -155,6 +170,7 @@ function CanvasEditor() {
     const handleStageMouseLeave = () => {
         setCursorPosition(null);
         setTempEndPoint(null);
+        setHoveredElementId(null);
     };
 
     // Обработка клавиши Delete и Escape (для отмены текущей линии)
@@ -205,19 +221,20 @@ function CanvasEditor() {
                         />
                     )}
 
-                    {/* Рендеринг элементов */}
-                    {elements.map((element) => {
-                        if (element.type === 'line') {
-                            return (
-                                <LineElement
-                                    key={element.id}
-                                    element={element}
-                                    isSelected={selectedElement?.id === element.id}
-                                    onSelect={() => selectElement(element)}
-                                    showDimensions={dimensionsVisible}
-                                />
-                            );
-                        }
+                        {/* Рендеринг элементов */}
+                        {elements.map((element) => {
+                            if (element.type === 'line') {
+                                return (
+                                    <LineElement
+                                        key={element.id}
+                                        element={element}
+                                        isSelected={selectedElement?.id === element.id}
+                                        isHovered={hoveredElementId === element.id && selectedTool === 'select'}
+                                        onSelect={() => selectElement(element)}
+                                        showDimensions={dimensionsVisible}
+                                    />
+                                );
+                            }
                         if (element.type === 'arc') {
                             return (
                                 <ArcElement

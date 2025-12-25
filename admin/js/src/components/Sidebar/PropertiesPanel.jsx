@@ -18,9 +18,7 @@ function PropertiesPanel({ element }) {
     // #endregion
 
     const handleDelete = () => {
-        if (window.confirm('Удалить элемент?')) {
-            deleteElement(element.id);
-        }
+        deleteElement(element.id);
     };
 
     return (

@@ -7,16 +7,15 @@ function Toolbar() {
     const { selectedTool, setSelectedTool, grid, toggleGridVisible, toggleMajorLines, dimensionsVisible, toggleDimensionsVisible } = useEditorStore();
 
     const tools = [
-        { id: 'select', label: 'Select', icon: '👆' },
-        { id: 'line', label: 'Line', icon: '📏' },
-        { id: 'arc', label: 'Arc', icon: '◯' },
-        { id: 'delete', label: 'Delete', icon: '🗑️' },
+        { id: 'select', label: 'Select', icon: 'uil-hand-pointer' },
+        { id: 'line', label: 'Line', icon: 'uil-minus' },
+        { id: 'arc', label: 'Arc', icon: 'uil-circle' },
+        { id: 'delete', label: 'Delete', icon: 'uil-trash-alt' },
     ];
 
     return (
         <div className="plintus-toolbar">
             <div className="plintus-toolbar-section">
-                <span className="plintus-toolbar-label">Tools:</span>
                 {tools.map((tool) => (
                     <ToolButton
                         key={tool.id}
@@ -27,8 +26,7 @@ function Toolbar() {
                 ))}
             </div>
 
-            <div className="plintus-toolbar-section">
-                <span className="plintus-toolbar-label">Grid:</span>
+            <div className="plintus-toolbar-section plintus-toolbar-section-right">
                 <button
                     type="button"
                     onClick={(e) => {
@@ -42,7 +40,7 @@ function Toolbar() {
                     className={grid.visible ? 'active' : ''}
                     title="Show/Hide Grid"
                 >
-                    ⚏ Grid
+                    <i className="uil uil-grid"></i>
                 </button>
                 <button
                     type="button"
@@ -54,12 +52,8 @@ function Toolbar() {
                     className={grid.showMajorLines ? 'active' : ''}
                     title="Show/Hide Major Grid Lines (10mm)"
                 >
-                    ▦ Major Lines
+                    <i className="uil uil-grids"></i>
                 </button>
-            </div>
-
-            <div className="plintus-toolbar-section">
-                <span className="plintus-toolbar-label">Dimensions:</span>
                 <button
                     type="button"
                     onClick={(e) => {
@@ -70,7 +64,7 @@ function Toolbar() {
                     className={dimensionsVisible ? 'active' : ''}
                     title="Show/Hide Dimensions"
                 >
-                    📐 Dimensions
+                    <i className="uil uil-ruler"></i>
                 </button>
             </div>
         </div>

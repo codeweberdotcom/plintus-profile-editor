@@ -1,6 +1,7 @@
 .plintus-toolbar {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 20px;
     padding: 10px 20px;
     background: #fff;
@@ -8,10 +9,14 @@
     flex-wrap: wrap;
 }
 
+.plintus-toolbar-section-right {
+    margin-left: auto;
+}
+
 .plintus-toolbar-section {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 0;
 }
 
 .plintus-toolbar-label {
@@ -20,22 +25,32 @@
     margin-right: 5px;
 }
 
-.plintus-toolbar button {
-    padding: 8px 12px;
+.plintus-toolbar button:not(.plintus-tool-button) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
     border: 1px solid #ddd;
     background: #fff;
     cursor: pointer;
     border-radius: 4px;
     transition: all 0.2s;
+    width: 36px;
+    height: 36px;
+    margin: 0;
 }
 
-.plintus-toolbar button:hover {
+.plintus-toolbar button:not(.plintus-tool-button):hover {
     background: #f5f5f5;
 }
 
-.plintus-toolbar button.active {
+.plintus-toolbar button:not(.plintus-tool-button).active {
     background: #0073aa;
     color: #fff;
     border-color: #0073aa;
+}
+
+.plintus-toolbar button:not(.plintus-tool-button) i {
+    font-size: 18px;
 }
 
