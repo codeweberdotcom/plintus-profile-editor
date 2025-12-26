@@ -53,6 +53,8 @@ function LineElement({ element, isSelected, isHovered = false, hoverColor = '#00
 
     const handleSelect = (e) => {
         if (onSelect) {
+            // Для режима select НЕ останавливаем всплытие - пусть обрабатывается через handleStageClick
+            // Для других режимов (delete, arc) остановим всплытие в onSelect
             onSelect(e);
         }
     };
@@ -64,6 +66,11 @@ function LineElement({ element, isSelected, isHovered = false, hoverColor = '#00
                 points={[start.x, start.y, end.x, end.y]}
                 stroke={lineStroke}
                 strokeWidth={lineStrokeWidth}
+                onClick={handleSelect}
+                onTap={handleSelect}
+                perfectDrawEnabled={false}
+                hitStrokeWidth={10}
+                listening={true}
             />
             
             {/* Размеры (сноска) - отображаются только если showDimensions === true */}
@@ -74,6 +81,9 @@ function LineElement({ element, isSelected, isHovered = false, hoverColor = '#00
                         points={[leaderStartX, leaderStartY, leaderEndX, leaderEndY]}
                         stroke={strokeColor}
                         strokeWidth={1}
+                        onClick={handleSelect}
+                        onTap={handleSelect}
+                        hitStrokeWidth={5}
                     />
                     
                     {/* Горизонтальная линия */}
@@ -81,6 +91,9 @@ function LineElement({ element, isSelected, isHovered = false, hoverColor = '#00
                         points={[horizontalStartX, horizontalStartY, horizontalEndX, horizontalEndY]}
                         stroke={strokeColor}
                         strokeWidth={1}
+                        onClick={handleSelect}
+                        onTap={handleSelect}
+                        hitStrokeWidth={5}
                     />
                     
                     {/* Текст размера */}
@@ -91,6 +104,8 @@ function LineElement({ element, isSelected, isHovered = false, hoverColor = '#00
                         fontSize={11}
                         fill={textColor}
                         fontStyle="normal"
+                        onClick={handleSelect}
+                        onTap={handleSelect}
                     />
                 </>
             )}

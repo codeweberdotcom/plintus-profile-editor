@@ -5,7 +5,13 @@ function ArcElement({ element, isSelected, isHovered = false, hoverColor = '#007
     const { center, radius, startAngle = 0, endAngle, angle: arcAngle } = element;
 
     const handleSelect = (e) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/49b89e88-4674-4191-9133-bf7fd16c00a5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ArcElement.jsx:7',message:'ArcElement handleSelect called',data:{elementId:element.id,hasOnSelect:!!onSelect,eventType:e.type},timestamp:Date.now(),sessionId:'debug-session',runId:'select-fix2',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
+        
         if (onSelect) {
+            // НЕ останавливаем всплытие - пусть событие обрабатывается и на Stage тоже
+            // Это позволит handleStageClick обработать клик, если элемент не найден
             onSelect(e);
         }
     };

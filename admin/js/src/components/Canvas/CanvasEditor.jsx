@@ -241,7 +241,7 @@ function CanvasEditor() {
                 selectElement(null);
             }
         }
-        // Обработка инструмента выбора
+        // Обработка инструмента выбора (используем ту же логику, что и для delete)
         else if (selectedTool === 'select') {
             // Проверяем, кликнули ли по элементу
             const clickedElement = elements.find(el => {
@@ -403,17 +403,26 @@ function CanvasEditor() {
                                         isHovered={hoveredElementId === element.id && (selectedTool === 'select' || selectedTool === 'delete' || selectedTool === 'arc')}
                                         hoverColor={selectedTool === 'delete' ? '#dc3545' : '#0073aa'}
                                         onSelect={(e) => {
+                                            // Для режима delete обрабатываем напрямую
                                             if (selectedTool === 'delete') {
+                                                if (e.evt) {
+                                                    e.evt.stopPropagation();
+                                                }
                                                 deleteElement(element.id);
-                                            } else if (selectedTool === 'select' || selectedTool === 'arc') {
+                                            } else if (selectedTool === 'arc') {
+                                                // Для arc обрабатываем через onSelect
+                                                if (e.evt) {
+                                                    e.evt.stopPropagation();
+                                                }
                                                 // Всегда используем toggle-логику (добавить/удалить из выбранных)
                                                 // Для arc: максимум 2 элемента
-                                                if (selectedTool === 'arc' && selectedElements.length >= 2 && !selectedElements.some(el => el.id === element.id)) {
+                                                if (selectedElements.length >= 2 && !selectedElements.some(el => el.id === element.id)) {
                                                     // Не добавляем, если уже выбрано 2 элемента
                                                     return;
                                                 }
                                                 selectElement(element, true);
                                             }
+                                            // Для режима select НЕ обрабатываем здесь - пусть обрабатывается через handleStageClick
                                         }}
                                         showDimensions={dimensionsVisible}
                                     />
@@ -428,17 +437,26 @@ function CanvasEditor() {
                                     isHovered={hoveredElementId === element.id && (selectedTool === 'select' || selectedTool === 'delete' || selectedTool === 'arc')}
                                     hoverColor={selectedTool === 'delete' ? '#dc3545' : '#0073aa'}
                                     onSelect={(e) => {
+                                        // Для режима delete обрабатываем напрямую
                                         if (selectedTool === 'delete') {
+                                            if (e.evt) {
+                                                e.evt.stopPropagation();
+                                            }
                                             deleteElement(element.id);
-                                        } else if (selectedTool === 'select' || selectedTool === 'arc') {
+                                        } else if (selectedTool === 'arc') {
+                                            // Для arc обрабатываем через onSelect
+                                            if (e.evt) {
+                                                e.evt.stopPropagation();
+                                            }
                                             // Всегда используем toggle-логику (добавить/удалить из выбранных)
                                             // Для arc: максимум 2 элемента
-                                            if (selectedTool === 'arc' && selectedElements.length >= 2 && !selectedElements.some(el => el.id === element.id)) {
+                                            if (selectedElements.length >= 2 && !selectedElements.some(el => el.id === element.id)) {
                                                 // Не добавляем, если уже выбрано 2 элемента
                                                 return;
                                             }
                                             selectElement(element, true);
                                         }
+                                        // Для режима select НЕ обрабатываем здесь - пусть обрабатывается через handleStageClick
                                     }}
                                 />
                             );

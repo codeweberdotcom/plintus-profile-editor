@@ -60,26 +60,39 @@ export const useEditorStore = create((set, get) => ({
             selectedElements: [],
         };
     }),
-    selectElement: (element, isMultiSelect = false) => set((state) => {
-        if (!element) {
-            return { selectedElements: [] };
-        }
+    selectElement: (element, isMultiSelect = false) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/49b89e88-4674-4191-9133-bf7fd16c00a5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useEditorStore.js:45',message:'selectElement called',data:{hasElement:!!element,elementId:element?.id,isMultiSelect},timestamp:Date.now(),sessionId:'debug-session',runId:'select-fix1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         
-        if (isMultiSelect) {
-            // Множественный выбор: добавляем или удаляем элемент
-            const exists = state.selectedElements.some(el => el.id === element.id);
-            if (exists) {
-                // Удаляем элемент из выбранных
-                return { selectedElements: state.selectedElements.filter(el => el.id !== element.id) };
-            } else {
-                // Добавляем элемент к выбранным
-                return { selectedElements: [...state.selectedElements, element] };
+        return set((state) => {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/49b89e88-4674-4191-9133-bf7fd16c00a5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useEditorStore.js:68',message:'selectElement state update',data:{hasElement:!!element,elementId:element?.id,isMultiSelect,currentSelectedCount:state.selectedElements.length},timestamp:Date.now(),sessionId:'debug-session',runId:'select-fix1',hypothesisId:'D'})}).catch(()=>{});
+            // #endregion
+            if (!element) {
+                return { selectedElements: [] };
             }
-        } else {
-            // Одиночный выбор
-            return { selectedElements: [element] };
-        }
-    }),
+            
+            if (isMultiSelect) {
+                // Множественный выбор: добавляем или удаляем элемент
+                const exists = state.selectedElements.some(el => el.id === element.id);
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/49b89e88-4674-4191-9133-bf7fd16c00a5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useEditorStore.js:52',message:'Multi-select logic',data:{exists,elementId:element.id,selectedIds:state.selectedElements.map(el=>el.id)},timestamp:Date.now(),sessionId:'debug-session',runId:'select-fix1',hypothesisId:'D'})}).catch(()=>{});
+                // #endregion
+                
+                if (exists) {
+                    // Удаляем элемент из выбранных
+                    return { selectedElements: state.selectedElements.filter(el => el.id !== element.id) };
+                } else {
+                    // Добавляем элемент к выбранным
+                    return { selectedElements: [...state.selectedElements, element] };
+                }
+            } else {
+                // Одиночный выбор
+                return { selectedElements: [element] };
+            }
+        });
+    },
     toggleGridVisible: () => set((state) => ({
         grid: { ...state.grid, visible: !state.grid.visible },
     })),
