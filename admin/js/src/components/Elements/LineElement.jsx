@@ -2,7 +2,7 @@ import React from 'react';
 import { Line, Text, Group } from 'react-konva';
 import { formatLengthMM } from '../../utils/geometry';
 
-function LineElement({ element, isSelected, isHovered = false, onSelect, showDimensions = true }) {
+function LineElement({ element, isSelected, isHovered = false, hoverColor = '#0073aa', onSelect, showDimensions = true }) {
     const { start, end, length } = element;
     
     // Конвертируем длину в миллиметры
@@ -44,15 +44,21 @@ function LineElement({ element, isSelected, isHovered = false, onSelect, showDim
         lineStroke = '#0073aa';
         lineStrokeWidth = 3;
     } else if (isHovered) {
-        lineStroke = '#0073aa'; // Подсветка при наведении
+        lineStroke = hoverColor; // Подсветка при наведении (синий для select, красный для delete)
         lineStrokeWidth = 2.5;
     }
     
-    const strokeColor = isSelected ? '#0073aa' : (isHovered ? '#0073aa' : '#666');
-    const textColor = isSelected ? '#0073aa' : (isHovered ? '#0073aa' : '#333');
+    const strokeColor = isSelected ? '#0073aa' : (isHovered ? hoverColor : '#666');
+    const textColor = isSelected ? '#0073aa' : (isHovered ? hoverColor : '#333');
+
+    const handleSelect = (e) => {
+        if (onSelect) {
+            onSelect(e);
+        }
+    };
 
     return (
-        <Group onClick={onSelect} onTap={onSelect}>
+        <Group onClick={handleSelect} onTap={handleSelect}>
             {/* Основная линия */}
             <Line
                 points={[start.x, start.y, end.x, end.y]}

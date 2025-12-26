@@ -124,3 +124,90 @@ export function isPointOnLine(point, lineStart, lineEnd, tolerance = 10) {
     return dist < tolerance;
 }
 
+/**
+ * Находит точку пересечения двух линий
+ * @param {Object} line1 - Первая линия {start: {x, y}, end: {x, y}}
+ * @param {Object} line2 - Вторая линия {start: {x, y}, end: {x, y}}
+ * @returns {Object|null} - Точка пересечения {x, y} или null если нет пересечения
+ */
+export function lineIntersection(line1, line2) {
+    const x1 = line1.start.x;
+    const y1 = line1.start.y;
+    const x2 = line1.end.x;
+    const y2 = line1.end.y;
+    const x3 = line2.start.x;
+    const y3 = line2.start.y;
+    const x4 = line2.end.x;
+    const y4 = line2.end.y;
+
+    const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    
+    if (Math.abs(denom) < 1e-10) {
+        // Линии параллельны или совпадают
+        return null;
+    }
+
+    const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+    const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
+
+    // Проверяем, что точка пересечения находится на обоих отрезках
+    if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+        return {
+            x: x1 + t * (x2 - x1),
+            y: y1 + t * (y2 - y1),
+        };
+    }
+
+    return null;
+}
+
+/**
+ * Вычисляет направление линии (единичный вектор)
+ * @param {Object} line - Линия {start: {x, y}, end: {x, y}}
+ * @returns {Object} - Направление {x, y}
+ */
+export function lineDirection(line) {
+    const dx = line.end.x - line.start.x;
+    const dy = line.end.y - line.start.y;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    
+    if (len < 1e-10) {
+        return { x: 0, y: 0 };
+    }
+    
+    return { x: dx / len, y: dy / len };
+}
+
+/**
+ * Проверяет, соединяются ли две линии в одной точке
+ * @param {Object} line1 - Первая линия {start: {x, y}, end: {x, y}}
+ * @param {Object} line2 - Вторая линия {start: {x, y}, end: {x, y}}
+ * @param {number} tolerance - Допустимое расстояние для совпадения точек
+ * @returns {Object|null} - Точка соединения {x, y, line1End: boolean, line2End: boolean} или null
+ */
+export function findConnectionPoint(line1, line2, tolerance = 1) {
+    const points = [
+        { point: line1.start, line1End: false, line2End: null },
+        { point: line1.end, line1End: true, line2End: null },
+        { point: line2.start, line1End: null, line2End: false },
+        { point: line2.end, line1End: null, line2End: true },
+    ];
+
+    // Проверяем все комбинации точек
+    for (let i = 0; i < 2; i++) {
+        for (let j = 2; j < 4; j++) {
+            const dist = distance(points[i].point, points[j].point);
+            if (dist < tolerance) {
+                return {
+                    x: (points[i].point.x + points[j].point.x) / 2,
+                    y: (points[i].point.y + points[j].point.y) / 2,
+                    line1End: points[i].line1End,
+                    line2End: points[j].line2End,
+                };
+            }
+        }
+    }
+
+    return null;
+}
+

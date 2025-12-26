@@ -7,8 +7,8 @@ function Toolbar() {
     const { selectedTool, setSelectedTool, grid, toggleGridVisible, toggleMajorLines, dimensionsVisible, toggleDimensionsVisible } = useEditorStore();
 
     const tools = [
-        { id: 'select', label: 'Select', icon: 'uil-hand-pointer' },
-        { id: 'line', label: 'Line', icon: 'uil-minus' },
+        { id: 'select', label: 'Select', icon: 'uil-vector-square' },
+        { id: 'line', label: 'Line', icon: 'uil-edit-alt' },
         { id: 'arc', label: 'Arc', icon: 'uil-circle' },
         { id: 'delete', label: 'Delete', icon: 'uil-trash-alt' },
     ];

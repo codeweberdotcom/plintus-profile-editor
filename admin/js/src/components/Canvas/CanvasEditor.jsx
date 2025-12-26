@@ -3,7 +3,7 @@ import { Stage, Layer, Line, Circle } from 'react-konva';
 import Grid from './Grid';
 import { useEditorStore } from '../../store/useEditorStore';
 import { snapToGrid } from './SnapToGrid';
-import { snapToOrthogonal, distance, mmToPixels, isPointOnLine } from '../../utils/geometry';
+import { snapToOrthogonal, distance, mmToPixels, isPointOnLine, findConnectionPoint, lineDirection, angle, pointAtDistance } from '../../utils/geometry';
 import LineElement from '../Elements/LineElement';
 import ArcElement from '../Elements/ArcElement';
 import TempLinePreview from './TempLinePreview';
@@ -18,7 +18,7 @@ function CanvasEditor() {
         selectedTool,
         grid,
         viewbox,
-        selectedElement,
+        selectedElements,
         selectElement,
         addElement,
         isDrawing,
@@ -27,6 +27,7 @@ function CanvasEditor() {
         setCurrentLineStart,
         clearCurrentLineStart,
         deleteElement,
+        deleteSelectedElements,
         dimensionsVisible,
     } = useEditorStore();
 
@@ -50,6 +51,136 @@ function CanvasEditor() {
 
     // Конвертируем шаг сетки из миллиметров в пиксели
     const gridStepPixels = mmToPixels(grid.stepMM);
+    
+    // Функция для создания скругления между двумя линиями
+    const createArcAtCorner = React.useCallback((line1, line2) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/49b89e88-4674-4191-9133-bf7fd16c00a5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CanvasEditor.jsx:56',message:'createArcAtCorner called',data:{line1:{start:line1.start,end:line1.end,id:line1.id},line2:{start:line2.start,end:line2.end,id:line2.id}},timestamp:Date.now(),sessionId:'debug-session',runId:'arc-fix1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        
+        // Находим точку соединения двух линий
+        const connection = findConnectionPoint(line1, line2, 10);
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/49b89e88-4674-4191-9133-bf7fd16c00a5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CanvasEditor.jsx:62',message:'Connection point found',data:{connection,hasConnection:!!connection},timestamp:Date.now(),sessionId:'debug-session',runId:'arc-fix1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        
+        if (!connection) {
+            // Линии не соединяются, выходим
+            return;
+        }
+        
+        // Определяем радиус скругления (можно сделать настраиваемым, пока используем фиксированный)
+        const arcRadius = mmToPixels(5); // 5 мм по умолчанию
+        
+        // Определяем, какие точки линий остаются (не соединенные с точкой соединения)
+        const line1StartPoint = connection.line1End ? line1.start : line1.end;
+        const line2StartPoint = connection.line2End ? line2.start : line2.end;
+        
+        // Определяем направления линий ОТ точки соединения (внутрь угла)
+        const dir1 = lineDirection({ start: connection, end: line1StartPoint });
+        const dir2 = lineDirection({ start: connection, end: line2StartPoint });
+        
+        // Вычисляем углы направлений (в градусах)
+        const angle1 = Math.atan2(dir1.y, dir1.x) * (180 / Math.PI);
+        const angle2 = Math.atan2(dir2.y, dir2.x) * (180 / Math.PI);
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/49b89e88-4674-4191-9133-bf7fd16c00a5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CanvasEditor.jsx:82',message:'Angles calculated',data:{angle1,angle2,dir1,dir2,connection,line1StartPoint,line2StartPoint},timestamp:Date.now(),sessionId:'debug-session',runId:'arc-fix1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        
+        // Определяем точки начала и конца дуги на линиях (на расстоянии радиуса от точки соединения)
+        const arcStartPoint = {
+            x: connection.x + dir1.x * arcRadius,
+            y: connection.y + dir1.y * arcRadius,
+        };
+        const arcEndPoint = {
+            x: connection.x + dir2.x * arcRadius,
+            y: connection.y + dir2.y * arcRadius,
+        };
+        
+        // Вычисляем биссектрису угла
+        const bisectorAngle = (angle1 + angle2) / 2;
+        const bisectorRad = (bisectorAngle * Math.PI) / 180;
+        const bisectorDir = { x: Math.cos(bisectorRad), y: Math.sin(bisectorRad) };
+        
+        // Вычисляем угол между линиями
+        let angleDiff = Math.abs(angle2 - angle1);
+        if (angleDiff > 180) {
+            angleDiff = 360 - angleDiff;
+        }
+        const angleDiffRad = (angleDiff * Math.PI) / 180;
+        
+        // Расстояние от точки соединения до центра дуги по биссектрисе
+        const centerDist = arcRadius / Math.sin(angleDiffRad / 2);
+        const arcCenter = {
+            x: connection.x + bisectorDir.x * centerDist,
+            y: connection.y + bisectorDir.y * centerDist,
+        };
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/49b89e88-4674-4191-9133-bf7fd16c00a5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CanvasEditor.jsx:115',message:'Arc points calculated',data:{arcStartPoint,arcEndPoint,arcCenter,arcRadius,centerDist,angleDiff,angleDiffRad},timestamp:Date.now(),sessionId:'debug-session',runId:'arc-fix2',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
+        
+        // Создаем новые элементы: две обрезанные линии + дуга
+        const newLine1 = {
+            type: 'line',
+            start: line1StartPoint,
+            end: arcStartPoint,
+            length: distance(line1StartPoint, arcStartPoint),
+        };
+        
+        const newLine2 = {
+            type: 'line',
+            start: arcEndPoint,
+            end: line2StartPoint,
+            length: distance(arcEndPoint, line2StartPoint),
+        };
+        
+        // Вычисляем углы для дуги (от центра дуги к точкам начала и конца, в радианах)
+        const arcStartAngleRad = Math.atan2(arcStartPoint.y - arcCenter.y, arcStartPoint.x - arcCenter.x);
+        const arcEndAngleRad = Math.atan2(arcEndPoint.y - arcCenter.y, arcEndPoint.x - arcCenter.x);
+        
+        // Угол дуги должен быть равен углу между линиями (angleDiffRad)
+        // Используем уже вычисленный angleDiffRad для угла дуги
+        const arcAngleRad = angleDiffRad;
+        
+        // Конвертируем начальный угол в градусы (для rotation в Konva)
+        let arcStartAngle = arcStartAngleRad * (180 / Math.PI);
+        // Нормализуем в диапазон [-180, 180] для Konva rotation
+        if (arcStartAngle > 180) arcStartAngle -= 360;
+        if (arcStartAngle < -180) arcStartAngle += 360;
+        
+        // Угол дуги в градусах
+        const arcAngle = arcAngleRad * (180 / Math.PI);
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/49b89e88-4674-4191-9133-bf7fd16c00a5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CanvasEditor.jsx:150',message:'Arc angles calculated',data:{arcStartAngle,arcAngle,arcStartAngleRad,arcEndAngleRad,arcAngleRad,angleDiffRad},timestamp:Date.now(),sessionId:'debug-session',runId:'arc-fix2',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
+        
+        const newArc = {
+            type: 'arc',
+            center: arcCenter,
+            radius: arcRadius,
+            startAngle: arcStartAngle, // Начальный угол (для rotation в Konva)
+            endAngle: arcStartAngle + arcAngle, // Конечный угол (для совместимости)
+            angle: arcAngle, // Размер угла дуги (для отображения в Konva)
+        };
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/49b89e88-4674-4191-9133-bf7fd16c00a5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CanvasEditor.jsx:143',message:'New elements created',data:{newLine1,newLine2,newArc},timestamp:Date.now(),sessionId:'debug-session',runId:'arc-fix3',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
+        
+        // Удаляем старые линии и добавляем новые элементы (обрезанные линии + дуга)
+        deleteElement(line1.id);
+        deleteElement(line2.id);
+        addElement(newLine1);
+        addElement(newLine2);
+        addElement(newArc);
+        
+        // Сбрасываем выбор
+        selectElement(null);
+    }, [deleteElement, addElement, selectElement]);
     
     // Обработка кликов на канвасе
     const handleStageClick = (e) => {
@@ -84,49 +215,72 @@ function CanvasEditor() {
                 setTempEndPoint(null);
             }
         }
-        // Обработка инструмента дуги
+        // Обработка инструмента дуги (выбор элементов для создания скругления)
         else if (selectedTool === 'arc') {
-            // Для упрощения создаем дугу с центром в точке клика
-            // Радиус можно будет изменить в свойствах
-            addElement({
-                type: 'arc',
-                center: snappedPoint,
-                radius: 20, // Радиус по умолчанию
-                startAngle: 0,
-                endAngle: 90,
+            // Проверяем, кликнули ли по элементу
+            const clickedElement = elements.find(el => {
+                if (el.type === 'line') {
+                    return isPointOnLine(point, el.start, el.end, 10);
+                }
+                return false;
             });
+            
+            if (clickedElement) {
+                // Проверяем, не превышен ли лимит выбора (максимум 2 элемента)
+                const isAlreadySelected = selectedElements.some(el => el.id === clickedElement.id);
+                
+                if (isAlreadySelected) {
+                    // Убираем элемент из выбранных
+                    selectElement(clickedElement, true);
+                } else if (selectedElements.length < 2) {
+                    // Добавляем элемент к выбранным (максимум 2)
+                    selectElement(clickedElement, true);
+                }
+            } else {
+                // Если клик не по элементу, снимаем весь выбор
+                selectElement(null);
+            }
         }
         // Обработка инструмента выбора
         else if (selectedTool === 'select') {
             // Проверяем, кликнули ли по элементу
             const clickedElement = elements.find(el => {
                 if (el.type === 'line') {
-                    // Упрощенная проверка попадания (можно улучшить)
-                    const dx = el.end.x - el.start.x;
-                    const dy = el.end.y - el.start.y;
-                    const length = Math.sqrt(dx * dx + dy * dy);
-                    const t = Math.max(0, Math.min(1, 
-                        ((point.x - el.start.x) * dx + (point.y - el.start.y) * dy) / (length * length)
-                    ));
-                    const projX = el.start.x + t * dx;
-                    const projY = el.start.y + t * dy;
-                    const dist = Math.sqrt(
-                        Math.pow(point.x - projX, 2) + Math.pow(point.y - projY, 2)
-                    );
-                    return dist < 10; // Точность попадания
+                    return isPointOnLine(point, el.start, el.end, 10);
+                }
+                if (el.type === 'arc') {
+                    // Проверяем, находится ли точка рядом с дугой
+                    const dist = distance(point, el.center);
+                    return Math.abs(dist - el.radius) < 10; // tolerance 10px
                 }
                 return false;
             });
-
+            
             if (clickedElement) {
-                selectElement(clickedElement);
+                // Всегда используем toggle-логику (добавить/удалить из выбранных)
+                selectElement(clickedElement, true);
             } else {
+                // Если клик не по элементу, снимаем весь выбор
                 selectElement(null);
             }
         }
         // Удаление элемента
-        else if (selectedTool === 'delete' && selectedElement) {
-            deleteElement(selectedElement.id);
+        else if (selectedTool === 'delete') {
+            // Проверяем, кликнули ли по элементу для удаления
+            const clickedElement = elements.find(el => {
+                if (el.type === 'line') {
+                    return isPointOnLine(point, el.start, el.end, 10);
+                }
+                // Можно добавить проверку для других типов элементов
+                return false;
+            });
+            
+            if (clickedElement) {
+                deleteElement(clickedElement.id);
+            } else if (selectedElements.length > 0) {
+                // Если клик не по элементу, но есть выбранные элементы, удаляем их
+                deleteSelectedElements();
+            }
         }
     };
 
@@ -144,11 +298,16 @@ function CanvasEditor() {
         let snappedPoint = snapToGrid(point, gridStepPixels);
         setCursorPosition(snappedPoint);
         
-        // Если режим выбора активен, проверяем наведение на элементы
-        if (selectedTool === 'select') {
+        // Если режим выбора, удаления или arc активен, проверяем наведение на элементы
+        if (selectedTool === 'select' || selectedTool === 'delete' || selectedTool === 'arc') {
             const hoveredElement = elements.find(el => {
                 if (el.type === 'line') {
                     return isPointOnLine(point, el.start, el.end, 10);
+                }
+                if (el.type === 'arc') {
+                    // Проверяем, находится ли точка рядом с дугой (в пределах радиуса + tolerance)
+                    const dist = distance(point, el.center);
+                    return Math.abs(dist - el.radius) < 10; // tolerance 10px
                 }
                 return false;
             });
@@ -173,6 +332,16 @@ function CanvasEditor() {
         setHoveredElementId(null);
     };
 
+    // Обработка создания скругления, когда выбрано 2 элемента в режиме arc
+    useEffect(() => {
+        if (selectedTool === 'arc' && selectedElements.length === 2) {
+            const [line1, line2] = selectedElements;
+            if (line1 && line2 && line1.type === 'line' && line2.type === 'line') {
+                createArcAtCorner(line1, line2);
+            }
+        }
+    }, [selectedTool, selectedElements, createArcAtCorner]);
+
     // Обработка клавиши Delete и Escape (для отмены текущей линии)
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -183,15 +352,15 @@ function CanvasEditor() {
                 setTempEndPoint(null);
                 setCursorPosition(null);
             }
-            // Delete/Backspace - удалить выбранный элемент
-            else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElement) {
-                deleteElement(selectedElement.id);
+            // Delete/Backspace - удалить выбранные элементы
+            else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElements.length > 0) {
+                deleteSelectedElements();
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [selectedElement, deleteElement, currentLineStart, clearCurrentLineStart, setIsDrawing]);
+    }, [selectedElements, deleteSelectedElements, currentLineStart, clearCurrentLineStart, setIsDrawing]);
 
 
     return (
@@ -223,14 +392,29 @@ function CanvasEditor() {
 
                         {/* Рендеринг элементов */}
                         {elements.map((element) => {
+                            const isSelected = selectedElements.some(sel => sel.id === element.id);
+                            
                             if (element.type === 'line') {
                                 return (
                                     <LineElement
                                         key={element.id}
                                         element={element}
-                                        isSelected={selectedElement?.id === element.id}
-                                        isHovered={hoveredElementId === element.id && selectedTool === 'select'}
-                                        onSelect={() => selectElement(element)}
+                                        isSelected={isSelected}
+                                        isHovered={hoveredElementId === element.id && (selectedTool === 'select' || selectedTool === 'delete' || selectedTool === 'arc')}
+                                        hoverColor={selectedTool === 'delete' ? '#dc3545' : '#0073aa'}
+                                        onSelect={(e) => {
+                                            if (selectedTool === 'delete') {
+                                                deleteElement(element.id);
+                                            } else if (selectedTool === 'select' || selectedTool === 'arc') {
+                                                // Всегда используем toggle-логику (добавить/удалить из выбранных)
+                                                // Для arc: максимум 2 элемента
+                                                if (selectedTool === 'arc' && selectedElements.length >= 2 && !selectedElements.some(el => el.id === element.id)) {
+                                                    // Не добавляем, если уже выбрано 2 элемента
+                                                    return;
+                                                }
+                                                selectElement(element, true);
+                                            }
+                                        }}
                                         showDimensions={dimensionsVisible}
                                     />
                                 );
@@ -240,8 +424,22 @@ function CanvasEditor() {
                                 <ArcElement
                                     key={element.id}
                                     element={element}
-                                    isSelected={selectedElement?.id === element.id}
-                                    onSelect={() => selectElement(element)}
+                                    isSelected={isSelected}
+                                    isHovered={hoveredElementId === element.id && (selectedTool === 'select' || selectedTool === 'delete' || selectedTool === 'arc')}
+                                    hoverColor={selectedTool === 'delete' ? '#dc3545' : '#0073aa'}
+                                    onSelect={(e) => {
+                                        if (selectedTool === 'delete') {
+                                            deleteElement(element.id);
+                                        } else if (selectedTool === 'select' || selectedTool === 'arc') {
+                                            // Всегда используем toggle-логику (добавить/удалить из выбранных)
+                                            // Для arc: максимум 2 элемента
+                                            if (selectedTool === 'arc' && selectedElements.length >= 2 && !selectedElements.some(el => el.id === element.id)) {
+                                                // Не добавляем, если уже выбрано 2 элемента
+                                                return;
+                                            }
+                                            selectElement(element, true);
+                                        }
+                                    }}
                                 />
                             );
                         }

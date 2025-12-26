@@ -11,7 +11,7 @@ function App() {
     fetch('http://127.0.0.1:7242/ingest/49b89e88-4674-4191-9133-bf7fd16c00a5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:9',message:'App component mounting',data:{hasPlintusEditor:typeof window.plintusEditor!=='undefined',plintusEditorKeys:typeof window.plintusEditor!=='undefined'?Object.keys(window.plintusEditor):'undefined'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
     // #endregion
     
-    const { selectedElement, loadProfile } = useEditorStore();
+    const { selectedElements, loadProfile } = useEditorStore();
     const profileId = window.plintusEditor?.profileId;
     
     // #region agent log
@@ -53,9 +53,9 @@ function App() {
         const panelEl = document.querySelector('.plintus-properties-panel');
         if (contentEl) {
             const styles = window.getComputedStyle(contentEl);
-            fetch('http://127.0.0.1:7242/ingest/49b89e88-4674-4191-9133-bf7fd16c00a5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:50',message:'Layout debug',data:{hasSelectedElement:!!selectedElement,contentDisplay:styles.display,contentPosition:styles.position,hasPanel:!!panelEl,panelDisplay:panelEl?window.getComputedStyle(panelEl).display:'none',panelPosition:panelEl?window.getComputedStyle(panelEl).position:'none'},timestamp:Date.now(),sessionId:'debug-session',runId:'fix1',hypothesisId:'A'})}).catch(()=>{});
+            fetch('http://127.0.0.1:7242/ingest/49b89e88-4674-4191-9133-bf7fd16c00a5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:50',message:'Layout debug',data:{selectedCount:selectedElements.length,contentDisplay:styles.display,contentPosition:styles.position,hasPanel:!!panelEl,panelDisplay:panelEl?window.getComputedStyle(panelEl).display:'none',panelPosition:panelEl?window.getComputedStyle(panelEl).position:'none'},timestamp:Date.now(),sessionId:'debug-session',runId:'fix1',hypothesisId:'A'})}).catch(()=>{});
         }
-    }, [selectedElement]);
+    }, [selectedElements]);
     // #endregion
 
     return (
@@ -65,8 +65,8 @@ function App() {
                 <div className="plintus-editor-canvas-wrapper">
                     <CanvasEditor />
                 </div>
-                {selectedElement && (
-                    <PropertiesPanel element={selectedElement} />
+                {selectedElements.length > 0 && (
+                    <PropertiesPanel elements={selectedElements} />
                 )}
             </div>
         </div>
